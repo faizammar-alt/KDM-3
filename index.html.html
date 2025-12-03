@@ -1,0 +1,1020 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Kansas Digital Menu</title>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <style>
+    :root {
+      --primary-color: #e74c3c;
+      --secondary-color: #f39c12;
+      --dark-color: #2c3e50;
+      --light-color: #ecf0f1;
+      --border-radius: 8px;
+      --box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+      --transition: all 0.3s ease;
+    }
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    }
+    body {
+      background: #f5f5f5;
+      color: #333;
+      line-height: 1.6;
+    }
+    header {
+      background: var(--dark-color);
+      color: white;
+      padding: 1rem 0;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      box-shadow: var(--box-shadow);
+    }
+    .container {
+      max-width: 1200px;
+      margin: auto;
+      padding: 0 20px;
+    }
+    .header-content {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 1rem;
+    }
+    .logo {
+      font-size: 1.5rem;
+      font-weight: bold;
+    }
+    nav ul {
+      display: flex;
+      list-style: none;
+      gap: 0.5rem;
+    }
+    nav ul li a {
+      color: white;
+      text-decoration: none;
+      padding: 0.5rem 1rem;
+      border-radius: var(--border-radius);
+      transition: var(--transition);
+    }
+    nav ul li a:hover,
+    nav ul li a.active {
+      background: var(--primary-color);
+    }
+    .language-switch {
+      display: flex;
+      gap: 0.5rem;
+    }
+    .language-switch button {
+      padding: 0.5rem 1rem;
+      border: none;
+      border-radius: var(--border-radius);
+      background: white;
+      color: var(--dark-color);
+      cursor: pointer;
+      font-weight: bold;
+      transition: var(--transition);
+    }
+    .language-switch button.active {
+      background: var(--secondary-color);
+      color: white;
+    }
+    .hero {
+      background: linear-gradient(rgba(0,0,0,0.7), rgba(0,0,0,0.7)), 
+                  url('https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?auto=format&fit=crop&w=1470&q=80');
+      background-size: cover;
+      background-position: center;
+      text-align: center;
+      color: white;
+      padding: 4rem 2rem;
+    }
+    .hero h1 {
+      font-size: 2.5rem;
+      margin-bottom: 1rem;
+    }
+    .hero p {
+      font-size: 1.2rem;
+    }
+    .page {
+      padding: 2rem 0;
+    }
+    .page.hidden {
+      display: none;
+    }
+    .search-filter-section {
+      margin-bottom: 2rem;
+    }
+    #search-input {
+      width: 100%;
+      padding: 1rem;
+      border: 2px solid #ddd;
+      border-radius: var(--border-radius);
+      font-size: 1rem;
+      margin-bottom: 1rem;
+    }
+    #search-input:focus {
+      outline: none;
+      border-color: var(--primary-color);
+    }
+    .filter-buttons {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+    }
+    .filter-btn {
+      padding: 0.7rem 1.2rem;
+      border: 2px solid var(--primary-color);
+      background: white;
+      color: var(--primary-color);
+      border-radius: var(--border-radius);
+      cursor: pointer;
+      font-weight: 600;
+      transition: var(--transition);
+    }
+    .filter-btn:hover {
+      background: var(--light-color);
+    }
+    .filter-btn.active {
+      background: var(--primary-color);
+      color: white;
+    }
+    .stall-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+      gap: 1.5rem;
+      padding: 1rem 0;
+    }
+    .stall-button {
+      background: linear-gradient(135deg, var(--dark-color), #34495e);
+      border-radius: 20px;
+      padding: 1.5rem 1rem;
+      text-align: center;
+      cursor: pointer;
+      transition: var(--transition);
+      box-shadow: var(--box-shadow);
+      border: 3px solid rgba(255,255,255,0.1);
+      position: relative;
+    }
+    .stall-button:hover {
+      transform: translateY(-5px) scale(1.05);
+      box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2);
+      border-color: var(--primary-color);
+    }
+    .stall-icon {
+      font-size: 3rem;
+      margin-bottom: 0.5rem;
+      display: block;
+    }
+    .stall-name {
+      color: white;
+      font-weight: bold;
+      font-size: 0.9rem;
+      line-height: 1.3;
+    }
+    .stall-count {
+      position: absolute;
+      top: -8px;
+      right: -8px;
+      background: var(--primary-color);
+      color: white;
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.75rem;
+      font-weight: bold;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.3);
+    }
+    .modal {
+      display: none;
+      position: fixed;
+      z-index: 1000;
+      left: 0;
+      top: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0,0,0,0.8);
+      overflow-y: auto;
+    }
+    .modal.active {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 2rem;
+    }
+    .modal-content {
+      background: white;
+      border-radius: var(--border-radius);
+      max-width: 900px;
+      width: 100%;
+      max-height: 90vh;
+      overflow-y: auto;
+      position: relative;
+      animation: slideIn 0.3s ease;
+    }
+    @keyframes slideIn {
+      from {
+        opacity: 0;
+        transform: translateY(-50px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+    .modal-header {
+      background: var(--dark-color);
+      color: white;
+      padding: 1.5rem;
+      border-radius: var(--border-radius) var(--border-radius) 0 0;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      position: sticky;
+      top: 0;
+      z-index: 10;
+    }
+    .modal-title {
+      font-size: 1.5rem;
+      font-weight: bold;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+    .close-modal {
+      background: var(--primary-color);
+      color: white;
+      border: none;
+      width: 35px;
+      height: 35px;
+      border-radius: 50%;
+      font-size: 1.5rem;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: var(--transition);
+    }
+    .close-modal:hover {
+      background: #c0392b;
+      transform: rotate(90deg);
+    }
+    .modal-body {
+      padding: 1.5rem;
+    }
+    .menu-item {
+      padding: 1.5rem;
+      border-left: 4px solid var(--secondary-color);
+      margin-bottom: 1rem;
+      background: #f9f9f9;
+      border-radius: 8px;
+      transition: var(--transition);
+    }
+    .menu-item:hover {
+      background: #f0f0f0;
+      border-left-width: 6px;
+      transform: translateX(5px);
+    }
+    .menu-item:last-child {
+      margin-bottom: 0;
+    }
+    .item-info {
+      flex: 1;
+    }
+    .item-name {
+      font-size: 1.2rem;
+      font-weight: bold;
+      color: var(--dark-color);
+      margin-bottom: 0.5rem;
+    }
+    .item-description {
+      color: #666;
+      font-size: 0.95rem;
+      margin-bottom: 0.8rem;
+    }
+    .item-details {
+      display: flex;
+      gap: 1.5rem;
+      flex-wrap: wrap;
+      align-items: center;
+    }
+    .item-price {
+      color: var(--primary-color);
+      font-weight: bold;
+      font-size: 1.1rem;
+    }
+    .item-rating {
+      color: var(--secondary-color);
+      font-size: 0.95rem;
+    }
+    .category-badge {
+      background: var(--secondary-color);
+      color: white;
+      padding: 0.3rem 0.8rem;
+      border-radius: 20px;
+      font-size: 0.85rem;
+      font-weight: bold;
+      text-transform: uppercase;
+      white-space: nowrap;
+    }
+    #map {
+      max-width: 600px;
+      margin: 1rem auto;
+      display: block;
+      border-radius: var(--border-radius);
+      box-shadow: var(--box-shadow);
+    }
+    #map img {
+      width: 100%;
+      height: auto;
+      border-radius: var(--border-radius);
+    }
+    footer {
+      background: var(--dark-color);
+      color: white;
+      text-align: center;
+      padding: 2rem;
+      margin-top: 3rem;
+    }
+    .no-results {
+      text-align: center;
+      padding: 3rem;
+      color: #999;
+      font-size: 1.2rem;
+    }
+    #home .stall-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+      gap: 1.5rem;
+    }
+    #home .stall-card {
+      padding: 0;
+    }
+    #home .stall-card:hover {
+      transform: translateY(-5px);
+    }
+    @media (max-width: 768px) {
+      .hero h1 {
+        font-size: 1.8rem;
+      }
+      .hero p {
+        font-size: 1rem;
+      }
+      .stall-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+<body>
+<header>
+  <div class="container header-content">
+    <div class="logo">Kansas Digital Menu</div>
+    <nav>
+      <ul>
+        <li><a href="#" class="nav-link active" data-page="home">
+          <span class="lang" data-en="Home" data-id="Beranda">Home</span>
+        </a></li>
+        <li><a href="#" class="nav-link" data-page="menu">
+          <span class="lang" data-en="Menu" data-id="Menu">Menu</span>
+        </a></li>
+        <li><a href="#" class="nav-link" data-page="map-section">
+          <span class="lang" data-en="Location" data-id="Lokasi">Location</span>
+        </a></li>
+      </ul>
+    </nav>
+    <div class="language-switch">
+      <button id="lang-en" class="active">EN</button>
+      <button id="lang-id">ID</button>
+    </div>
+  </div>
+</header>
+
+<main>
+  <section id="home" class="page active">
+    <div class="hero">
+      <h1 class="lang" data-en="About Kansas Digital Menu" data-id="Tentang Kansas Digital Menu">About Kansas Digital Menu</h1>
+    </div>
+    <div class="container" style="padding: 3rem 20px;">
+      <div style="max-width: 800px; margin: 0 auto 3rem;">
+        <p class="lang" style="font-size: 1.1rem; line-height: 1.8; margin-bottom: 1.5rem;" 
+           data-en="Never been to the Kansas canteen before? Well, you might not know it's a Faculty of Humanities canteen yet, bro. Established in 1985, Kansas is not just a place to eat — it's the birthplace of brilliant ideas, stress relief, and sometimes even a refuge when deadlines hit at midnight." 
+           data-id="Lo anak FIB tapi belum pernah nongkrong di Kansas? Wah, bisa dibilang belum sah jadi anak FIB, bro. Berdiri sejak 1985, Kansas bukan cuma tempat jajan — ini tempat lahirnya ide-ide brilian, tawa lepas, dan kadang juga tangisan deadline tengah malam.">
+          Never been to the Kansas canteen before? Well, you might not know it's a Faculty of Humanities canteen yet, bro. Established in 1985, Kansas is not just a place to eat — it's the birthplace of brilliant ideas, stress relief, and sometimes even a refuge when deadlines hit at midnight.
+        </p>
+        
+        <p class="lang" style="font-size: 1.1rem; line-height: 1.8; margin-bottom: 1.5rem;" 
+           data-en="Kansas used to be just a simple food stall. But now? It has transformed into a legendary culinary hub for students. The food? Complete. From appetizing demo dishes to snacks perfect for binge-watching series. Best of all, Kansas is the answer to every hunger pang — whether you're broke or flush with cash." 
+           data-id="Dulu sih Kansas cuma kumpulan gerobak sederhana. Tapi sekarang? Udah berubah jadi pusat kuliner legendarisnya anak FIB. Makanan? Komplet. Dari yang bikin kenyang tahan demo seharian, sampai camilan buat nemenin skripsi yang nggak kelar-kelar. Pokoknya, Kansas tuh jawaban dari semua rasa lapar — baik perut maupun pikiran.">
+          Kansas used to be just a simple food stall. But now? It has transformed into a legendary culinary hub for students. The food? Complete. From appetizing demo dishes to snacks perfect for binge-watching series. Best of all, Kansas is the answer to every hunger pang — whether you're broke or flush with cash.
+        </p>
+        
+        <p class="lang" style="font-size: 1.1rem; line-height: 1.8; margin-bottom: 1.5rem;" 
+           data-en="It's not just about eating, but about moments. Because here, students can casually discuss scripts while sipping coffee, work on assignments to the sound of laughter, or even senior students sharing stories about 'the good old days...' And with its tagline — 'Nurturing Mind and Stomach' — Kansas truly continues to be a second home for Humanities warriors from past to present." 
+           data-id="Bukan cuma soal makan, tapi soal momen. Karena di sinilah tempat lo curhat skripsi sambil ngopi, nugas ramean sampe ketiduran, bahkan ketemu senior yang ternyata bisa relate juga soal dosen killer. Dan dengan tagline kebanggaannya — 'Mengenyangkan Pikiran dan Perut' — Kansas terus jadi rumah kedua buat para pejuang FIB dari dulu sampe sekarang.">
+          It's not just about eating, but about moments. Because here, students can casually discuss scripts while sipping coffee, work on assignments to the sound of laughter, or even senior students sharing stories about 'the good old days...' And with its tagline — 'Nurturing Mind and Stomach' — Kansas truly continues to be a second home for Humanities warriors from past to present.
+        </p>
+      </div>
+      
+      <h2 class="lang" style="text-align: center; color: var(--dark-color); margin-bottom: 2rem; font-size: 2rem;" 
+          data-en="What Do Humanities Students Do at Kansas?" 
+          data-id="Ngapain Aja Sih Anak FIB di Kansas?">
+        What Do Humanities Students Do at Kansas?
+      </h2>
+      
+      <div class="stall-grid">
+        <div class="stall-card">
+          <div style="font-size: 3rem; margin-bottom: 1rem; padding: 1.5rem; text-align: center;">📚</div>
+          <h3 style="padding: 0 1.5rem; text-align: center;" class="lang" data-en="Study & Work on Assignments" data-id="Ngerjain Tugas">Study & Work on Assignments</h3>
+          <p style="padding: 0 1.5rem 1.5rem; text-align: center;" class="lang" 
+             data-en="Doing assignments as you fill your belly up. Two birds with one stone" 
+             data-id="Sambil ngis perut sambil nugas juga. Sekali dayung dapet dua pulau">
+            Doing assignments as you fill your belly up. Two birds with one stone
+          </p>
+        </div>
+        
+        <div class="stall-card">
+          <div style="font-size: 3rem; margin-bottom: 1rem; padding: 1.5rem; text-align: center;">🎹</div>
+          <h3 style="padding: 0 1.5rem; text-align: center;" class="lang" data-en="Play Piano & Chill" data-id="Main Piano & Santai">Play Piano & Chill</h3>
+          <p style="padding: 0 1.5rem 1.5rem; text-align: center;" class="lang" 
+             data-en="Take a break and play the piano, perfect for unwinding between classes" 
+             data-id="Istirahat sejenak sambil main piano, cocok untuk melepas penat">
+            Take a break and play the piano, perfect for unwinding between classes
+          </p>
+        </div>
+        
+        <div class="stall-card">
+          <div style="font-size: 3rem; margin-bottom: 1rem; padding: 1.5rem; text-align: center;">☕</div>
+          <h3 style="padding: 0 1.5rem; text-align: center;" class="lang" data-en="Chuseyo Cafe Experience" data-id="Pengalaman Cafe Chuseyo">Chuseyo Cafe Experience</h3>
+          <p style="padding: 0 1.5rem 1.5rem; text-align: center;" class="lang" 
+             data-en="Standard cafe vibes especially for K-pop fans - chat, relax, and rewind" 
+             data-id="Suasana cafe untuk penggemar K-pop - ngobrol, santai, dan rileks">
+            Standard cafe vibes especially for K-pop fans - chat, relax, and rewind
+          </p>
+        </div>
+        
+        <div class="stall-card">
+          <div style="font-size: 3rem; margin-bottom: 1rem; padding: 1.5rem; text-align: center;">🍜</div>
+          <h3 style="padding: 0 1.5rem; text-align: center;" class="lang" data-en="Culinary Hunting" data-id="Kuliner Hunting">Culinary Hunting</h3>
+          <p style="padding: 0 1.5rem 1.5rem; text-align: center;" class="lang" 
+             data-en="Explore 24 different stalls with endless food options to discover" 
+             data-id="Jelajahi 24 kios berbeda dengan pilihan makanan tanpa batas">
+            Explore 24 different stalls with endless food options to discover
+          </p>
+        </div>
+        
+        <div class="stall-card">
+          <div style="font-size: 3rem; margin-bottom: 1rem; padding: 1.5rem; text-align: center;">🚶</div>
+          <h3 style="padding: 0 1.5rem; text-align: center;" class="lang" data-en="Junction to Other Faculties" data-id="Persimpangan ke Fakultas Lain">Junction to Other Faculties</h3>
+          <p style="padding: 0 1.5rem 1.5rem; text-align: center;" class="lang" 
+             data-en="Strategic location connecting to other faculties - perfect meeting point" 
+             data-id="Lokasi strategis yang menghubungkan ke fakultas lain - titik kumpul sempurna">
+            Strategic location connecting to other faculties - perfect meeting point
+          </p>
+        </div>
+        
+        <div class="stall-card">
+          <div style="font-size: 3rem; margin-bottom: 1rem; padding: 1.5rem; text-align: center;">😊</div>
+          <h3 style="padding: 0 1.5rem; text-align: center;" class="lang" data-en="Have Fun & Relax" data-id="Senang-Senang & Santai">Have Fun & Relax</h3>
+          <p style="padding: 0 1.5rem 1.5rem; text-align: center;" class="lang" 
+             data-en="Just hang out, chat with friends, and enjoy the atmosphere" 
+             data-id="Nongkrong, ngobrol sama teman, dan nikmati suasananya">
+            Just hang out, chat with friends, and enjoy the atmosphere
+          </p>
+        </div>
+      </div>
+      
+      <div style="max-width: 800px; margin: 3rem auto; padding: 2rem; background: white; border-radius: var(--border-radius); box-shadow: var(--box-shadow);">
+        <h3 class="lang" style="text-align: center; color: var(--primary-color); margin-bottom: 1.5rem; font-size: 1.8rem;" 
+            data-en="📍 Hours & Rush Times" 
+            data-id="📍 Jam Operasional & Jam Ramai">
+          📍 Hours & Rush Times
+        </h3>
+        
+        <div style="display: grid; gap: 1rem;">
+          <div style="padding: 1rem; background: #f9f9f9; border-radius: 8px; border-left: 4px solid var(--secondary-color);">
+            <strong class="lang" data-en="⏰ Rush Hours:" data-id="⏰ Jam Ramai:">⏰ Rush Hours:</strong>
+            <p class="lang" style="margin: 0.5rem 0 0 0;" 
+               data-en="11:00 AM - 1:00 PM (Everyday)" 
+               data-id="11:00 - 13:00 (Setiap Hari)">
+              11:00 AM - 1:00 PM (Everyday)
+            </p>
+          </div>
+          
+          <div style="padding: 1rem; background: #f9f9f9; border-radius: 8px; border-left: 4px solid var(--primary-color);">
+            <strong class="lang" data-en="🚪 Front & Side Entrance:" data-id="🚪 Pintu Depan & Samping:">🚪 Front & Side Entrance:</strong>
+            <p class="lang" style="margin: 0.5rem 0 0 0;" 
+               data-en="Closes at 6:00 PM" 
+               data-id="Tutup jam 18:00">
+              Closes at 6:00 PM
+            </p>
+          </div>
+          
+          <div style="padding: 1rem; background: #f9f9f9; border-radius: 8px; border-left: 4px solid var(--dark-color);">
+            <strong class="lang" data-en="🌙 Back Entrance:" data-id="🌙 Pintu Belakang:">🌙 Back Entrance:</strong>
+            <p class="lang" style="margin: 0.5rem 0 0 0;" 
+               data-en="Open until 12:00 AM (Late night? No problem!)" 
+               data-id="Buka sampai 00:00 (Malam-malam? Santai aja!)">
+              Open until 12:00 AM (Late night? No problem!)
+            </p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section id="menu" class="page hidden">
+    <div class="container">
+      <div class="search-filter-section">
+        <input type="text" id="search-input" placeholder="Search for food...">
+        <div class="filter-buttons">
+          <button class="filter-btn active" data-category="all">
+            <span class="lang" data-en="All" data-id="Semua">All</span>
+          </button>
+          <button class="filter-btn" data-category="heavy">
+            <span class="lang" data-en="Heavy Meals" data-id="Makanan Berat">Heavy Meals</span>
+          </button>
+          <button class="filter-btn" data-category="light">
+            <span class="lang" data-en="Light Meals" data-id="Makanan Ringan">Light Meals</span>
+          </button>
+          <button class="filter-btn" data-category="drinks">
+            <span class="lang" data-en="Drinks" data-id="Minuman">Drinks</span>
+          </button>
+          <button class="filter-btn" data-category="desserts">
+            <span class="lang" data-en="Desserts" data-id="Pencuci Mulut">Desserts</span>
+          </button>
+        </div>
+      </div>
+      <div class="stall-grid" id="menu-grid"></div>
+    </div>
+    
+    <!-- Modal for stall details -->
+    <div id="stall-modal" class="modal">
+      <div class="modal-content">
+        <div class="modal-header">
+          <div class="modal-title">
+            <span id="modal-icon"></span>
+            <span id="modal-stall-name"></span>
+          </div>
+          <button class="close-modal">&times;</button>
+        </div>
+        <div class="modal-body" id="modal-menu-items"></div>
+      </div>
+    </div>
+  </section>
+
+  <section id="map-section" class="page hidden">
+    <div class="container">
+      <h2 class="lang" data-en="Find Us - Seating Chart" data-id="Temukan Kami - Denah Tempat Duduk">Find Us - Seating Chart</h2>
+      <p class="lang" data-en="Kansas Digital menu, Faculty of Humanities - University of Indonesia" data-id="Kansas Digital menu, Fakultas Ilmu Pengetahuan Budaya - Universitas Indonesia">Kansas Digital menu, Faculty of Humanities - University of Indonesia</p>
+      <div id="map">
+        <img src="c:\Users\ASUS ROG STRIX\Downloads\PDT Map (2).png" alt="Kansas Seating Chart" />
+      </div>
+    </div>
+  </section>
+</main>
+
+<footer>
+  <p class="lang" data-en="&copy; 2025 Kansas Digital Menu. All rights reserved." data-id="&copy; 2025 Kansas Digital Menu. Hak cipta dilindungi.">&copy; 2025 Kansas Digital Menu. All rights reserved.</p>
+</footer>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script>
+  // ========== MENU DATA ==========
+  const menuData = [
+    {
+      stall: "Dapur Ayu",
+      category: "heavy",  
+      items: [
+        { name: "Ayam Bakar & Goreng", nameId: "Ayam Bakar & Goreng", price: "Rp 25,000", rating: 4.5, description: "Grilled or fried chicken", descriptionId: "Ayam bakar atau goreng" },
+        { name: "Ayam Geprek", nameId: "Ayam Geprek", price: "Rp 22,000", rating: 4.3, description: "Smashed fried chicken with sambal", descriptionId: "Ayam goreng geprek dengan sambal" },
+        { name: "Ikan Bakar & Goreng", nameId: "Ikan Bakar & Goreng", price: "Rp 28,000", rating: 4.2, description: "Grilled or fried fish", descriptionId: "Ikan bakar atau goreng" },
+        { name: "Nasi Bakar", nameId: "Nasi Bakar", price: "Rp 18,000", rating: 4.0, description: "Grilled rice with various fillings", descriptionId: "Nasi bakar dengan berbagai isian" },
+        { name: "Nasi Liwet Teri", nameId: "Nasi Liwet Teri", price: "Rp 15,000", rating: 4.1, description: "Rice with anchovies", descriptionId: "Nasi liwet dengan teri" },
+        { name: "Nasi T.O. (Tutug Oncom)", nameId: "Nasi T.O. (Tutug Oncom)", price: "Rp 16,000", rating: 4.4, description: "Rice mixed with fermented soybean cake", descriptionId: "Nasi dicampur dengan oncom" },
+        { name: "Sosis Bakar & Goreng", nameId: "Sosis Bakar & Goreng", price: "Rp 12,000", rating: 3.9, description: "Grilled or fried sausage", descriptionId: "Sosis bakar atau goreng" },
+        { name: "Air Mineral Aqua (Refill)", nameId: "Air Mineral Aqua (Isi Ulang)", price: "Rp 5,000", rating: 4.5, description: "Refill mineral water", descriptionId: "Isi ulang air mineral" }
+      ]
+    },
+    {
+      stall: "Tongseng Pak Kumis",
+      category: "heavy",
+      items: [
+        { name: "Bakso Tongseng Gulai", nameId: "Bakso Tongseng Gulai", price: "Rp 18,000", rating: 4.4, description: "Meatball with tongseng gulai soup", descriptionId: "Bakso dengan kuah tongseng gulai" },
+        { name: "Mie Ayam Tongseng", nameId: "Mie Ayam Tongseng", price: "Rp 15,000", rating: 4.3, description: "Chicken noodle with tongseng style", descriptionId: "Mie ayam tongseng" },
+        { name: "Kambing Tongseng", nameId: "Kambing Tongseng", price: "Rp 25,000", rating: 4.6, description: "Goat meat tongseng", descriptionId: "Kambing tongseng" },
+        { name: "Kambing Sapi", nameId: "Kambing Sapi", price: "Rp 22,000", rating: 4.4, description: "Goat and beef mix", descriptionId: "Kambing dan sapi" },
+        { name: "Sapi Campur", nameId: "Sapi Campur", price: "Rp 20,000", rating: 4.5, description: "Mixed beef soup", descriptionId: "Sapi campur" }
+      ]
+    },
+    {
+      stall: "Penyetan Mas Roni",
+      category: "heavy",
+      items: [
+        { name: "Ayam Goreng", nameId: "Ayam Goreng", price: "Rp 15,000", rating: 4.3, description: "Fried chicken", descriptionId: "Ayam goreng" },
+        { name: "Ayam Penyet", nameId: "Ayam Penyet", price: "Rp 16,000", rating: 4.5, description: "Smashed fried chicken", descriptionId: "Ayam penyet" },
+        { name: "Ayam Kalasan", nameId: "Ayam Kalasan", price: "Rp 17,000", rating: 4.4, description: "Kalasan style chicken", descriptionId: "Ayam kalasan" },
+        { name: "Sup Kacang Merah", nameId: "Sup Kacang Merah", price: "Rp 8,000", rating: 4.2, description: "Red bean soup", descriptionId: "Sup kacang merah" },
+        { name: "Ayam Bakar", nameId: "Ayam Bakar", price: "Rp 18,000", rating: 4.6, description: "Grilled chicken", descriptionId: "Ayam bakar" },
+        { name: "Ayam Kremes", nameId: "Ayam Kremes", price: "Rp 17,000", rating: 4.5, description: "Crispy fried chicken", descriptionId: "Ayam kremes" },
+        { name: "Pecel Lele", nameId: "Pecel Lele", price: "Rp 14,000", rating: 4.4, description: "Fried catfish", descriptionId: "Pecel lele" }
+      ]
+    },
+    {
+      stall: "Soto Sedap Al Biru",
+      category: "heavy",
+      items: [
+        { name: "Soto Ayam", nameId: "Soto Ayam", price: "Rp 12,000", rating: 4.4, description: "Chicken soto", descriptionId: "Soto ayam" },
+        { name: "Soto Babat", nameId: "Soto Babat", price: "Rp 15,000", rating: 4.3, description: "Tripe soto", descriptionId: "Soto babat" },
+        { name: "Soto Daging", nameId: "Soto Daging", price: "Rp 18,000", rating: 4.5, description: "Beef soto", descriptionId: "Soto daging" },
+        { name: "Soto Campur", nameId: "Soto Campur", price: "Rp 20,000", rating: 4.6, description: "Mixed soto", descriptionId: "Soto campur" },
+        { name: "Soto Betawi", nameId: "Soto Betawi", price: "Rp 18,000", rating: 4.5, description: "Betawi style soto", descriptionId: "Soto betawi" }
+      ]
+    },
+    {
+      stall: "Sego Goreng Mas Mat",
+      category: "heavy",
+      items: [
+        { name: "Nasi Goreng Spesial", nameId: "Nasi Goreng Spesial", price: "Rp 15,000", rating: 4.5, description: "Special fried rice", descriptionId: "Nasi goreng spesial" },
+        { name: "Nasi Magelang", nameId: "Nasi Magelang", price: "Rp 14,000", rating: 4.4, description: "Magelang style rice", descriptionId: "Nasi magelang" },
+        { name: "Nasi Gila", nameId: "Nasi Gila", price: "Rp 16,000", rating: 4.6, description: "Crazy rice with everything", descriptionId: "Nasi gila" },
+        { name: "Mie Rebus/Goreng", nameId: "Mie Rebus/Goreng", price: "Rp 12,000", rating: 4.3, description: "Boiled or fried noodle", descriptionId: "Mie rebus/goreng" },
+        { name: "Kwetiau Rebus/Goreng", nameId: "Kwetiau Rebus/Goreng", price: "Rp 13,000", rating: 4.4, description: "Boiled or fried flat noodle", descriptionId: "Kwetiau rebus/goreng" },
+        { name: "Bihun Rebus/Goreng", nameId: "Bihun Rebus/Goreng", price: "Rp 11,000", rating: 4.2, description: "Boiled or fried rice vermicelli", descriptionId: "Bihun rebus/goreng" }
+      ]
+    },
+    {
+      stall: "Ayam Kremes Juara",
+      category: "heavy",
+      items: [
+        { name: "Ayam Geprek", nameId: "Ayam Geprek", price: "Rp 15,000", rating: 4.5, description: "Smashed fried chicken", descriptionId: "Ayam geprek" },
+        { name: "Ayam Asam Manis", nameId: "Ayam Asam Manis", price: "Rp 16,000", rating: 4.4, description: "Sweet and sour chicken", descriptionId: "Ayam asam manis" },
+        { name: "Ayam Penyet", nameId: "Ayam Penyet", price: "Rp 15,000", rating: 4.6, description: "Smashed chicken", descriptionId: "Ayam penyet" },
+        { name: "Ayam Bakar", nameId: "Ayam Bakar", price: "Rp 17,000", rating: 4.5, description: "Grilled chicken", descriptionId: "Ayam bakar" },
+        { name: "Chicken Salad", nameId: "Chicken Salad", price: "Rp 14,000", rating: 4.3, description: "Chicken salad", descriptionId: "Salad ayam" },
+        { name: "Telur Dadar Qimpul", nameId: "Telur Dadar Qimpul", price: "Rp 8,000", rating: 4.2, description: "Special omelette", descriptionId: "Telur dadar spesial" }
+      ]
+    },
+    {
+      stall: "Sate Madura H. Sulih",
+      category: "heavy",
+      items: [
+        { name: "Sate Ayam Nasi + Lontong", nameId: "Sate Ayam Nasi + Lontong", price: "Rp 20,000", rating: 4.6, description: "Chicken satay with rice and rice cake", descriptionId: "Sate ayam dengan nasi dan lontong" },
+        { name: "Sate Kambing Nasi + Lontong", nameId: "Sate Kambing Nasi + Lontong", price: "Rp 25,000", rating: 4.7, description: "Goat satay with rice and rice cake", descriptionId: "Sate kambing dengan nasi dan lontong" }
+      ]
+    },
+    {
+      stall: "Ayam Rica Bu Dhe Mar",
+      category: "heavy",
+      items: [
+        { name: "Ayam GR Mentega", nameId: "Ayam GR Mentega", price: "Rp 16,000", rating: 4.4, description: "Butter fried chicken", descriptionId: "Ayam goreng mentega" },
+        { name: "Ayam Tepung Rica", nameId: "Ayam Tepung Rica", price: "Rp 15,000", rating: 4.5, description: "Crispy chicken with rica sauce", descriptionId: "Ayam tepung rica" },
+        { name: "Bislik Ayam", nameId: "Bislik Ayam", price: "Rp 17,000", rating: 4.3, description: "Spicy chicken", descriptionId: "Ayam pedas" },
+        { name: "Ayam Lada Hitam", nameId: "Ayam Lada Hitam", price: "Rp 16,000", rating: 4.6, description: "Black pepper chicken", descriptionId: "Ayam lada hitam" },
+        { name: "Chicken Thailand Sc.", nameId: "Chicken Thailand Sc.", price: "Rp 17,000", rating: 4.5, description: "Thai style chicken", descriptionId: "Ayam ala Thailand" },
+        { name: "Mie Cib (Chili Oil)", nameId: "Mie Cib (Chili Oil)", price: "Rp 14,000", rating: 4.4, description: "Noodle with chili oil", descriptionId: "Mie dengan minyak cabe" },
+        { name: "Rice Bowl", nameId: "Rice Bowl", price: "Rp 18,000", rating: 4.5, description: "Rice bowl with toppings", descriptionId: "Rice bowl" },
+        { name: "Ayam Penyet", nameId: "Ayam Penyet", price: "Rp 15,000", rating: 4.4, description: "Smashed chicken", descriptionId: "Ayam penyet" },
+        { name: "Es Teh", nameId: "Es Teh", price: "Rp 5,000", rating: 4.2, description: "Iced tea", descriptionId: "Es teh" },
+        { name: "Es Jeruk", nameId: "Es Jeruk", price: "Rp 7,000", rating: 4.3, description: "Iced orange juice", descriptionId: "Es jeruk" },
+        { name: "Kopi", nameId: "Kopi", price: "Rp 8,000", rating: 4.4, description: "Coffee", descriptionId: "Kopi" },
+        { name: "Indomie", nameId: "Indomie", price: "Rp 12,000", rating: 4.5, description: "Instant noodle", descriptionId: "Indomie" },
+        { name: "Ayam Bakar", nameId: "Ayam Bakar", price: "Rp 17,000", rating: 4.6, description: "Grilled chicken", descriptionId: "Ayam bakar" }
+      ]
+    },
+    {
+      stall: "Gado-Gado Kopral",
+      category: "light",
+      items: [
+        { name: "Gado-Gado Nasi", nameId: "Gado-Gado Nasi", price: "Rp 12,000", rating: 4.5, description: "Gado-gado with rice", descriptionId: "Gado-gado dengan nasi" },
+        { name: "Gado-Gado Lontong", nameId: "Gado-Gado Lontong", price: "Rp 12,000", rating: 4.4, description: "Gado-gado with rice cake", descriptionId: "Gado-gado dengan lontong" },
+        { name: "Ketoprak & Gorengan", nameId: "Ketoprak & Gorengan", price: "Rp 10,000", rating: 4.3, description: "Ketoprak with fritters", descriptionId: "Ketoprak dengan gorengan" },
+        { name: "Karedok & Gorengan", nameId: "Karedok & Gorengan", price: "Rp 10,000", rating: 4.2, description: "Karedok with fritters", descriptionId: "Karedok dengan gorengan" },
+        { name: "Lontong Sayur", nameId: "Lontong Sayur", price: "Rp 11,000", rating: 4.4, description: "Rice cake with vegetable curry", descriptionId: "Lontong sayur" },
+        { name: "Pecel Madiun", nameId: "Pecel Madiun", price: "Rp 12,000", rating: 4.5, description: "Madiun style pecel", descriptionId: "Pecel madiun" }
+      ]
+    },
+    {
+      stall: "Teh Tarik Abun",
+      category: "drinks",
+      items: [
+        { name: "Teh Abun", nameId: "Teh Abun", price: "Rp 6,000", rating: 4.5, description: "Special milk tea", descriptionId: "Teh susu spesial" },
+        { name: "Kopi", nameId: "Kopi", price: "Rp 7,000", rating: 4.4, description: "Coffee", descriptionId: "Kopi" },
+        { name: "Teh Tarik", nameId: "Teh Tarik", price: "Rp 8,000", rating: 4.6, description: "Pulled tea", descriptionId: "Teh tarik" },
+        { name: "Teh Susu", nameId: "Teh Susu", price: "Rp 7,000", rating: 4.5, description: "Milk tea", descriptionId: "Teh susu" },
+        { name: "Teh Manis", nameId: "Teh Manis", price: "Rp 5,000", rating: 4.3, description: "Sweet tea", descriptionId: "Teh manis" },
+        { name: "Jeruk", nameId: "Jeruk", price: "Rp 8,000", rating: 4.4, description: "Orange juice", descriptionId: "Jeruk" },
+        { name: "Capucino", nameId: "Capucino", price: "Rp 9,000", rating: 4.5, description: "Cappuccino", descriptionId: "Capucino" },
+        { name: "Melly", nameId: "Melly", price: "Rp 10,000", rating: 4.3, description: "Special drink", descriptionId: "Minuman spesial" },
+        { name: "Milo", nameId: "Milo", price: "Rp 10,000", rating: 4.6, description: "Milo chocolate drink", descriptionId: "Minuman milo" }
+      ]
+    },
+    {
+      stall: "Nasi Rames Kare",
+      category: "heavy",
+      items: [
+        { name: "Bubur Ayam", nameId: "Bubur Ayam", price: "Rp 10,000", rating: 4.4, description: "Chicken porridge", descriptionId: "Bubur ayam" },
+        { name: "Nasi Rames Kari", nameId: "Nasi Rames Kari", price: "Rp 15,000", rating: 4.5, description: "Mixed rice with curry", descriptionId: "Nasi rames kari" },
+        { name: "Kopi, Teh, Mams", nameId: "Kopi, Teh, Mams", price: "Rp 5,000", rating: 4.2, description: "Coffee, tea, and others", descriptionId: "Kopi, teh, dan lainnya" },
+        { name: "Gorengan", nameId: "Gorengan", price: "Rp 2,000", rating: 4.3, description: "Fritters", descriptionId: "Gorengan" }
+      ]
+    },
+    {
+      stall: "Es Krim Tumini",
+      category: "desserts",
+      items: [
+        { name: "Ice Cream Vanilla", nameId: "Es Krim Vanila", price: "Rp 8,000", rating: 4.5, description: "Vanilla ice cream", descriptionId: "Es krim vanila" },
+        { name: "Ice Cream Coklat", nameId: "Es Krim Coklat", price: "Rp 8,000", rating: 4.6, description: "Chocolate ice cream", descriptionId: "Es krim coklat" },
+        { name: "Ice Cream Strawberry", nameId: "Es Krim Strawberry", price: "Rp 8,000", rating: 4.5, description: "Strawberry ice cream", descriptionId: "Es krim strawberry" },
+        { name: "Ice Cream Mangga", nameId: "Es Krim Mangga", price: "Rp 8,000", rating: 4.4, description: "Mango ice cream", descriptionId: "Es krim mangga" },
+        { name: "Ice Cream Green Tea", nameId: "Es Krim Green Tea", price: "Rp 9,000", rating: 4.6, description: "Green tea ice cream", descriptionId: "Es krim green tea" }
+      ]
+    },
+    {
+      stall: "Junk Food",
+      category: "light",
+      items: [
+        { name: "Chicken Katsu", nameId: "Chicken Katsu", price: "Rp 15,000", rating: 4.5, description: "Japanese fried chicken", descriptionId: "Chicken katsu" },
+        { name: "Chicken Karaage", nameId: "Chicken Karaage", price: "Rp 14,000", rating: 4.4, description: "Japanese fried chicken", descriptionId: "Chicken karaage" },
+        { name: "Chicken Wings", nameId: "Chicken Wings", price: "Rp 16,000", rating: 4.6, description: "Fried chicken wings", descriptionId: "Sayap ayam goreng" },
+        { name: "Roti Bakar", nameId: "Roti Bakar", price: "Rp 10,000", rating: 4.3, description: "Grilled bread", descriptionId: "Roti bakar" },
+        { name: "Kentang Goreng", nameId: "Kentang Goreng", price: "Rp 12,000", rating: 4.4, description: "French fries", descriptionId: "Kentang goreng" },
+        { name: "Indomie Rebus", nameId: "Indomie Rebus", price: "Rp 10,000", rating: 4.5, description: "Boiled instant noodle", descriptionId: "Indomie rebus" },
+        { name: "Ice Cream Aneka Float Pisang B", nameId: "Aneka Float Pisang B", price: "Rp 15,000", rating: 4.4, description: "Ice cream float with banana", descriptionId: "Float pisang dengan es krim" },
+        { name: "Buble Drink", nameId: "Buble Drink", price: "Rp 12,000", rating: 4.3, description: "Bubble drink", descriptionId: "Minuman boba" },
+        { name: "Ice Cream", nameId: "Ice Cream", price: "Rp 10,000", rating: 4.5, description: "Ice cream", descriptionId: "Es krim" },
+        { name: "Nutrisari", nameId: "Nutrisari", price: "Rp 8,000", rating: 4.2, description: "Fruit juice drink", descriptionId: "Minuman sari buah" }
+      ]
+    },
+    {
+      stall: "Siomay Emma",
+      category: "light",
+      items: [
+        { name: "Somay", nameId: "Somay", price: "Rp 12,000", rating: 4.5, description: "Steamed fish dumpling", descriptionId: "Somay" },
+        { name: "Batagor", nameId: "Batagor", price: "Rp 13,000", rating: 4.6, description: "Fried fish dumpling", descriptionId: "Batagor" },
+        { name: "Sotomie Bagor", nameId: "Sotomie Bagor", price: "Rp 14,000", rating: 4.4, description: "Batagor with noodle soup", descriptionId: "Sotomie bagor" },
+        { name: "Indomie Rebus", nameId: "Indomie Rebus", price: "Rp 10,000", rating: 4.3, description: "Boiled instant noodle", descriptionId: "Indomie rebus" },
+        { name: "Es Jeruk", nameId: "Es Jeruk", price: "Rp 7,000", rating: 4.4, description: "Iced orange juice", descriptionId: "Es jeruk" },
+        { name: "Es Buah", nameId: "Es Buah", price: "Rp 12,000", rating: 4.5, description: "Fruit ice", descriptionId: "Es buah" },
+        { name: "Es Teh Manis", nameId: "Es Teh Manis", price: "Rp 5,000", rating: 4.3, description: "Iced sweet tea", descriptionId: "Es teh manis" }
+      ]
+    },
+    {
+      stall: "Sop Iga Bowty",
+      category: "heavy",
+      items: [
+        { name: "Beef/Chicken Teriyaki", nameId: "Beef/Chicken Teriyaki", price: "Rp 18,000", rating: 4.5, description: "Teriyaki beef or chicken", descriptionId: "Teriyaki sapi/ayam" },
+        { name: "Tokyo Salad", nameId: "Tokyo Salad", price: "Rp 15,000", rating: 4.3, description: "Tokyo style salad", descriptionId: "Salad tokyo" },
+        { name: "Gyoza", nameId: "Gyoza", price: "Rp 12,000", rating: 4.6, description: "Japanese dumplings", descriptionId: "Gyoza" },
+        { name: "Ekado", nameId: "Ekado", price: "Rp 10,000", rating: 4.4, description: "Fish cake", descriptionId: "Ekado" },
+        { name: "Hokkaido Cheese", nameId: "Hokkaido Cheese", price: "Rp 16,000", rating: 4.7, description: "Hokkaido cheese dish", descriptionId: "Hokkaido cheese" }
+      ]
+    },
+    {
+      stall: "Chicken Katsu Supriyatno",
+      category: "heavy",
+      items: [
+        { name: "Nasi Goreng Katsu", nameId: "Nasi Goreng Katsu", price: "Rp 16,000", rating: 4.5, description: "Fried rice with chicken katsu", descriptionId: "Nasi goreng dengan katsu" },
+        { name: "Ayam Penyet/Geprek", nameId: "Ayam Penyet/Geprek", price: "Rp 15,000", rating: 4.6, description: "Smashed chicken", descriptionId: "Ayam penyet/geprek" },
+        { name: "Beef/Chicken Teriyaki", nameId: "Beef/Chicken Teriyaki", price: "Rp 18,000", rating: 4.5, description: "Teriyaki beef or chicken", descriptionId: "Teriyaki sapi/ayam" },
+        { name: "Roti/Pisang Bakar", nameId: "Roti/Pisang Bakar", price: "Rp 10,000", rating: 4.3, description: "Grilled bread or banana", descriptionId: "Roti/pisang bakar" },
+        { name: "Kentang Goreng", nameId: "Kentang Goreng", price: "Rp 12,000", rating: 4.4, description: "French fries", descriptionId: "Kentang goreng" }
+      ]
+    },
+    {
+      stall: "Mie Ayam Sagi",
+      category: "heavy",
+      items: [
+        { name: "Bakso", nameId: "Bakso", price: "Rp 12,000", rating: 4.5, description: "Meatball soup", descriptionId: "Bakso" },
+        { name: "Mie Ayam Special", nameId: "Mie Ayam Special", price: "Rp 15,000", rating: 4.6, description: "Special chicken noodle", descriptionId: "Mie ayam spesial" },
+        { name: "Mie Yamin", nameId: "Mie Yamin", price: "Rp 13,000", rating: 4.4, description: "Dry noodle", descriptionId: "Mie yamin" },
+        { name: "Ayam Bakar Madu", nameId: "Ayam Bakar Madu", price: "Rp 17,000", rating: 4.5, description: "Honey grilled chicken", descriptionId: "Ayam bakar madu" },
+        { name: "Ayam Goreng/Penyet", nameId: "Ayam Goreng/Penyet", price: "Rp 15,000", rating: 4.4, description: "Fried or smashed chicken", descriptionId: "Ayam goreng/penyet" }
+      ]
+    },
+    {
+      stall: "Nasi Rames Padang Della",
+      category: "heavy",
+      items: [
+        { name: "Rendang", nameId: "Rendang", price: "Rp 20,000", rating: 4.7, description: "Beef rendang", descriptionId: "Rendang" },
+        { name: "Gulai", nameId: "Gulai", price: "Rp 18,000", rating: 4.5, description: "Curry", descriptionId: "Gulai" },
+        { name: "Aneka Lauk Padang", nameId: "Aneka Lauk Padang", price: "Rp 15,000", rating: 4.6, description: "Various Padang dishes", descriptionId: "Aneka lauk padang" },
+        { name: "Kerang", nameId: "Kerang", price: "Rp 16,000", rating: 4.4, description: "Clams", descriptionId: "Kerang" },
+        { name: "Keju", nameId: "Keju", price: "Rp 12,000", rating: 4.3, description: "Cheese dish", descriptionId: "Keju" },
+        { name: "Kiasa", nameId: "Kiasa", price: "Rp 14,000", rating: 4.4, description: "Special Padang dish", descriptionId: "Kiasa" }
+      ]
+    },
+    {
+      stall: "Roti dan Pisang Bakar Pak De Siran",
+      category: "light",
+      items: [
+        { name: "Es Milo", nameId: "Es Milo", price: "Rp 10,000", rating: 4.5, description: "Iced Milo", descriptionId: "Es milo" },
+        { name: "Es Cappucino", nameId: "Es Cappucino", price: "Rp 9,000", rating: 4.4, description: "Iced cappuccino", descriptionId: "Es cappucino" },
+        { name: "Es Teh Manis", nameId: "Es Teh Manis", price: "Rp 5,000", rating: 4.3, description: "Iced sweet tea", descriptionId: "Es teh manis" },
+        { name: "Es Jeruk", nameId: "Es Jeruk", price: "Rp 8,000", rating: 4.4, description: "Iced orange juice", descriptionId: "Es jeruk" },
+        { name: "Beng-Beng Drink", nameId: "Beng-Beng Drink", price: "Rp 12,000", rating: 4.6, description: "Beng-beng chocolate drink", descriptionId: "Minuman beng-beng" },
+        { name: "Good Day", nameId: "Good Day", price: "Rp 10,000", rating: 4.3, description: "Good Day coffee", descriptionId: "Kopi good day" },
+        { name: "Paras/Dingin", nameId: "Paras/Dingin", price: "Rp 8,000", rating: 4.2, description: "Hot or cold drinks", descriptionId: "Minuman panas/dingin" },
+        { name: "Lemon Tea", nameId: "Lemon Tea", price: "Rp 8,000", rating: 4.5, description: "Lemon tea", descriptionId: "Teh lemon" }
+      ]
+    },
+    {
+      stall: "Nasi Rames Sunda Djupri",
+      category: "heavy",
+      items: [
+        { name: "Aneka Ayam", nameId: "Aneka Ayam", price: "Rp 15,000", rating: 4.5, description: "Various chicken dishes", descriptionId: "Aneka ayam" },
+        { name: "Aneka Telur", nameId: "Aneka Telur", price: "Rp 8,000", rating: 4.3, description: "Various egg dishes", descriptionId: "Aneka telur" },
+        { name: "Aneka Ikan", nameId: "Aneka Ikan", price: "Rp 18,000", rating: 4.4, description: "Various fish dishes", descriptionId: "Aneka ikan" },
+        { name: "Aneka Sayuran", nameId: "Aneka Sayuran", price: "Rp 5,000", rating: 4.2, description: "Various vegetables", descriptionId: "Aneka sayuran" },
+        { name: "Cumi/Udang", nameId: "Cumi/Udang", price: "Rp 20,000", rating: 4.6, description: "Squid or shrimp", descriptionId: "Cumi/udang" },
+        { name: "Saus Asam, Manis, Saus Padang", nameId: "Saus Asam, Manis, Saus Padang", price: "Rp 3,000", rating: 4.3, description: "Various sauces", descriptionId: "Berbagai saus" }
+      ]
+    }
+  ];
+
+  let currentLang = 'en';
+
+  // Stall icons mapping
+  const stallIcons = {
+    "Dapur Ayu": "🍗",
+    "Tongseng Pak Kumis": "🍲",
+    "Penyetan Mas Roni": "🔥",
+    "Soto Sedap Al Biru": "🥘",
+    "Sego Goreng Mas Mat": "🍚",
+    "Ayam Kremes Juara": "🏆",
+    "Sate Madura H. Sulih": "�串",
+    "Ayam Rica Bu Dhe Mar": "🌶️",
+    "Gado-Gado Kopral": "🥗",
+    "Teh Tarik Abun": "☕",
+    "Nasi Rames Kare": "🍛",
+    "Es Krim Tumini": "🍦",
+    "Junk Food": "🍔",
+    "Siomay Emma": "🥟",
+    "Sop Iga Bowty": "🍜",
+    "Chicken Katsu Supriyatno": "🍱",
+    "Mie Ayam Sagi": "🍜",
+    "Nasi Rames Padang Della": "🌶️",
+    "Roti dan Pisang Bakar Pak De Siran": "🍌",
+    "Nasi Rames Sunda Djupri": "🍽️"
+  };
+
+  // ========== RENDER MENU ==========
+  const menuGrid = document.getElementById("menu-grid");
+  const modal = document.getElementById("stall-modal");
+  const modalStallName = document.getElementById("modal-stall-name");
+  const modalIcon = document.getElementById("modal-icon");
+  const modalMenuItems = document.getElementById("modal-menu-items");
+  const closeModalBtn = document.querySelector(".close-modal");
+  
+  function getCategoryLabel(category, lang) {
+    const labels = {
+      heavy: { en: 'HEAVY MEAL', id: 'MAKANAN BERAT' },
+      light: { en: 'SNACK', id: 'MAKANAN RINGAN' },
+      drinks: { en: 'DRINKS', id: 'MINUMAN' },
+      desserts: { en: 'DESSERTS', id: 'PENCUCI MULUT' }
+    };
+    return labels[category]?.[lang] || category.toUpperCase();
+  }
+  
+  function renderMenu(filter = "all", search = "") {
+    menuGrid.innerHTML = "";
+    let hasResults = false;
+    
+    menuData.forEach(stall => {
+      if (filter !== "all" && stall.category !== filter) return;
+      
+      // Filter items based on search
+      const filteredItems = stall.items.filter(item => {
+        const itemName = currentLang === 'en' ? item.name : item.nameId;
+        const stallName = stall.stall.toLowerCase();
+        const searchTerm = search.toLowerCase();
+        return itemName.toLowerCase().includes(searchTerm) || stallName.includes(searchTerm);
+      });
+      
+      if (filteredItems.length === 0) return;
+      
+      hasResults = true;
+      const icon = stallIcons[stall.stall] || "🍽️";
+      
+      // Create stall button
+      const stallButton = document.createElement('div');
+      stallButton.className = 'stall-button';
+      stallButton.innerHTML = `
+        <span class="stall-count">${stall.items.length}</span>
+        <span class="stall-icon">${icon}</span>
+        <div class="stall-name">${stall.stall}</div>
+      `;
+      
+      stallButton.addEventListener('click', () => openStallModal(stall));
+      menuGrid.appendChild(stallButton);
+    });
+    
+    if (!hasResults) {
+      menuGrid.innerHTML = `<div class="no-results" style="grid-column: 1/-1;">${currentLang === 'en' ? 'No items found' : 'Tidak ada item ditemukan'}</div>`;
+    }
+  }
+  
+  function openStallModal(stall) {
+    const icon = stallIcons[stall.stall] || "🍽️";
+    modalIcon.textContent = icon;
+    modalStallName.textContent = stall.stall;
+    
+    let itemsHTML = '';
+    stall.items.forEach(item => {
+      const itemName = currentLang === 'en' ? item.name : item.nameId;
+      const itemDesc = currentLang === 'en' ? item.description : item.descriptionId;
+      const stars = '⭐'.repeat(Math.floor(item.rating));
+      const categoryLabel = getCategoryLabel(stall.category, currentLang);
+      
+      itemsHTML += `
+        <div class="menu-item">
+          <div class="item-info">
+            <div class="item-name">${itemName}</div>
+            <div class="item-description">${itemDesc}</div>
+            <div class="item-details">
+              <span class="item-price">${item.price}</span>
+              <span class="item-rating">${stars} ${item.rating}</span>
+              <span class="category-badge">${categoryLabel}</span>
+            </div>
+          </div>
+        </div>
+      `;
+    });
+    
+    modalMenuItems.innerHTML = itemsHTML;
+    modal.classList.add('active');
+    document.body.style.overflow = 'hidden';
+  }
+  
+  function closeStallModal() {
+    modal.classList.remove('active');
+    document.body.style.overflow = 'auto';
+  }
+  
+  closeModalBtn.addEventListener('click', closeStallModal);
+  modal.addEventListener('click', (e) => {
+    if (e.target === modal) closeStallModal();
+  });
+  
+  renderMenu();
+
+  // ========== FILTER BUTTONS ==========
+  document.querySelectorAll(".filter-btn").forEach(btn => {
+    btn.addEventListener("click", () => {
+      document.querySelectorAll(".filter-btn").forEach(b => b.classList.remove("active"));
+      btn.classList.add("active");
+      renderMenu(btn.dataset.category, document.getElementById("search-input").value);
+    });
+  });
+
+  // ========== SEARCH ==========
+  document.getElementById("search-input").addEventListener("input", e => {
+    const active = document.querySelector(".filter-btn.active").dataset.category;
+    renderMenu(active, e.target.value);
+  });
+
+  // ========== LANGUAGE SWITCH ==========
+  const langButtons = {
+    en: document.getElementById("lang-en"), 
+    id: document.getElementById("lang-id")
+  };
+  
+  function switchLang(lang) {
+    currentLang = lang;
+    document.querySelectorAll(".lang").forEach(el => {
+      el.textContent = el.dataset[lang];
+    });
+    langButtons.en.classList.toggle("active", lang === "en");
+    langButtons.id.classList.toggle("active", lang === "id");
+    document.getElementById("search-input").placeholder = lang === "en" ? "Search for food..." : "Cari makanan...";
+    
+    // Re-render menu with current filters
+    const activeCategory = document.querySelector(".filter-btn.active").dataset.category;
+    const searchValue = document.getElementById("search-input").value;
+    renderMenu(activeCategory, searchValue);
+  }
+  
+  langButtons.en.onclick = () => switchLang("en");
+  langButtons.id.onclick = () => switchLang("id");
+
+  // ========== PAGE NAVIGATION ==========
+  document.querySelectorAll(".nav-link").forEach(link => {
+    link.addEventListener("click", e => {
+      e.preventDefault();
+      document.querySelectorAll(".nav-link").forEach(l => l.classList.remove("active"));
+      link.classList.add("active");
+      document.querySelectorAll(".page").forEach(p => p.classList.add("hidden"));
+      document.getElementById(link.dataset.page).classList.remove("hidden");
+    });
+  });
+</script>
+</body>
+</html>
